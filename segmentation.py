@@ -2,10 +2,11 @@ import cv2
 import numpy as np
 import matplotlib.pyplot as plt
 
-img = cv2.imread('test.jpg')
-#img = cv2.imread('word-segmentation.JPEG')
+#img = cv2.imread('test.jpg')
+img = cv2.imread('word-segmentation.JPEG')
 img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
 
+# -------------------- scale ---------------------------
 h,w,c = img.shape
 
 if w > 1000:
@@ -23,7 +24,7 @@ def binarisation(image):
     return thresh
 
 thresh_img = binarisation(img)
-plt.show()
+#plt.show()
 
 def dilatation(img,depth):
         kernel = np.ones((3,depth), np.uint8)
@@ -46,8 +47,8 @@ for ctr in sorted_contours_lines:
         x, y, w, h = cv2.boundingRect(ctr)
         cv2.rectangle(img2, (x, y), (x + w, y + h), (40, 100, 250), 2)
 
-# plt.imshow(img2)
-# plt.show()
+#plt.imshow(img2)
+#plt.show()
 
 # ------------------------- word segmentation ---------------------------------
 
@@ -75,8 +76,42 @@ for line in sorted_contours_lines:
         words_list.append([x + x2, y + y2, x + x2 + w2, y + y2 + h2])
         cv2.rectangle(img3, (x + x2, y + y2), (x + x2 + w2, y + y2 + h2), (0, 255, 0), 2)
 
-# plt.imshow(img3)
-# plt.show()
+#plt.imshow(img3)
+#plt.show()
+
+# ---------------------------- image mask ---------------------------------------------
+segmentation_mask = np.zeros_like(thresh_img)
+for word in words_list:
+    x1, y1, x2, y2 = word
+    roi_word = img[y1:y2, x1:x2]
+
+    roi_gray = cv2.cvtColor(roi_word, cv2.COLOR_BGR2GRAY)
+    _, roi_thresh = cv2.threshold(roi_gray, 0, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)
+
+    segmentation_mask[y1:y2, x1:x2] = roi_thresh
+
+plt.imshow(segmentation_mask, cmap='gray')
+plt.show()
+
+# ------------------------------------- single words mask -------------------------------
+
+word_masks = []
+
+for i, word in enumerate(words_list):
+    x1, y1, x2, y2 = word
+    roi_word = img[y1:y2, x1:x2]
+
+    roi_gray = cv2.cvtColor(roi_word, cv2.COLOR_BGR2GRAY)
+    _, roi_thresh = cv2.threshold(roi_gray, 0, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)
+
+    word_masks.append(roi_thresh)
+
+    plt.figure()
+    plt.imshow(roi_thresh, cmap='gray')
+    plt.axis('off')
+    plt.show()
+
+
 # ----------------------------- letter segmentation -----------------------------------
 img_letters = img.copy()
 letters_list = []
@@ -96,13 +131,13 @@ for word in words_list:
         letters_list.append([x1 + x_l, y1 + y_l, x1 + x_l + w_l, y1 + y_l + h_l])
         cv2.rectangle(img_letters, (x1 + x_l, y1 + y_l), (x1 + x_l + w_l, y1 + y_l + h_l), (255, 0, 0), 2)
 
-plt.imshow(img_letters)
-plt.show()
+#plt.imshow(img_letters)
+#plt.show()
 #
-#index = 2
+# index = 2
 # for index in letters_list:
-#     x1, y1, x2, y2 = index
-#     letter_img = img[y1:y2, x1:x2]
+#      x1, y1, x2, y2 = index
+#      letter_img = img[y1:y2, x1:x2]
 #
-#     plt.imshow(letter_img, cmap='gray')
-#     plt.show()
+#      plt.imshow(letter_img, cmap='gray')
+#      plt.show()
